@@ -1,0 +1,10 @@
+{
+    "author": "leobezr",
+    "devDependencies": {
+        "@parcel/transformer-sass": "^2.2.1",
+        "parcel": "^2.2.1"
+    },
+    "scripts": {
+        "compile": "yarn parcel ./src/index.html"
+    }
+}

@@ -1,0 +1,3 @@
+requestAnimationFrame(() => {
+    console.log("animation")
+})
