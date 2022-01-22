@@ -18,45 +18,74 @@ const getContainerProps = (id: string): ContainerProp => {
 };
 
 const ERRORS = {
-  duplicatedLayer: "Layer already exists, can't create another, try updating layer"
-}
+  duplicatedLayer:
+    "Layer already exists, can't create another, try updating layer",
+};
 
 class Scene {
+  private container!: string;
+
   private dim = {
     w: 0,
     h: 0,
-  }
-  
+  };
+
   public stage!: Konva.Stage;
   public layerStorage: LayerStorage = {};
 
   constructor(target: string) {
-    const { w, h } = getContainerProps(target);
-
-    this.dim.w = w;
-    this.dim.h = h;
+    this.container = target;
+    this.updateMonitorSize();
 
     this.stage = new Konva.Stage({
       container: target,
-      width: w,
-      height: h,
+      width: this.dim.w,
+      height: this.dim.h,
     });
   }
 
+  private updateMonitorSize(): void {
+    const { w, h } = getContainerProps(this.container);
+
+    this.dim.w = w;
+    this.dim.h = h;
+  }
+
   public get size(): ContainerProp {
-    return this.dim;
+    return {
+      w: this.dim.w,
+      h: this.dim.h
+    }
+  }
+
+  private createStage(): void {
+    const { w, h } = getContainerProps(this.container);
+
+    if (w !== this.dim.w || h !== this.dim.h) {
+      this.updateMonitorSize();
+      this.clearStage();
+      this.clearAllLayers();
+      
+      this.stage = new Konva.Stage({
+        container: this.container,
+        width: this.dim.w,
+        height: this.dim.h,
+      });
+    }
   }
 
   public render(): void {
+    this.createStage();
     this.stage.draw();
   }
 
-  public createLayer(layerName: string): void {
+  public createLayer(layerName: string): Konva.Layer {
     if (this.layerStorage[layerName]) {
       throw Error("SCENE ERROR: " + ERRORS.duplicatedLayer);
     }
 
-    this.layerStorage[layerName] = new Konva.Layer()
+    this.layerStorage[layerName] = new Konva.Layer();
+    return this.layerStorage[layerName];
   }
 
   public add(shape: Konva.Shape, layerName: string): void {
@@ -64,11 +93,11 @@ class Scene {
       const layer = this.layerStorage[layerName];
 
       layer.add(shape);
-      this.stage.add(layer);
-      layer.draw();
     } else {
-      this.createLayer(layerName);
+      const layer = this.createLayer(layerName);
+
       this.add(shape, layerName);
+      this.stage.add(layer);
     }
   }
 
@@ -76,6 +105,25 @@ class Scene {
     if (this.layerStorage[layerName]) {
       this.layerStorage[layerName].clear();
       delete this.layerStorage[layerName];
+    }
+  }
+
+  public clearAllLayers(): void {
+    for(const key in this.layerStorage) {
+      this.layerStorage[key].remove();
+    }
+
+    this.layerStorage = {};
+  }
+
+  public clearStage(): void {
+    const $canvas = document.getElementById(this.container);
+    const $container = document.querySelector(".konvajs-content");
+
+    this.stage.clear();
+
+    if ($canvas && $container) {
+      $canvas.removeChild($container);
     }
   }
 }
